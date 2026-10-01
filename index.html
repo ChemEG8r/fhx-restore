@@ -149,6 +149,7 @@
 
   /* ---- stylized dialog mockups ---- */
   .fig { margin: 12px 0 2px; }
+  .fig img { display: block; max-width: 100%; height: auto; border: 1px solid var(--line); border-radius: 8px; }
   .winbox { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; max-width: 430px; font-size: 13.5px; box-shadow: var(--shadow); }
   .wtitle { background: var(--win-title); color: #fff; font-weight: 700; font-size: 13px; padding: 6px 10px; font-family: "Public Sans", sans-serif; }
   .wbody { background: var(--win); padding: 12px; }
@@ -223,62 +224,23 @@
 const LOGPATH = "D:\\DeltaV\\DVData\\importexportprogress.log";
 const VCATPATH = "D:\\DeltaV\\DVData\\VCAT_Databases";
 
-/* --- stylized dialog figures --- */
+/* --- actual screenshots from KBA NK-1300-0236 --- */
+function figimg(src, alt, cap) {
+  return `<div class="fig"><img src="img/${src}" alt="${alt}" loading="lazy"><div class="figcap">${cap}</div></div>`;
+}
 const FIGS = {
-  createName: `<div class="fig"><div class="winbox"><div class="wtitle">Create Database</div>
-    <div class="wbody">
-      <div class="wrow"><div class="wlabel">Database Location — Host / Directory</div>
-      <div class="wfield">D:\\DeltaV\\DVData\\Databases</div></div>
-      <div class="wrow"><div class="wlabel">New Database Name</div>
-      <div class="wfield hl">RESTORED_&lt;SYSTEM&gt;_2026</div></div>
-    </div>
-    <div class="wbtns"><span class="wbtn">&lt;- Back</span><span class="wbtn hl">Next -&gt;</span><span class="wbtn">Exit</span><span class="wbtn">Help</span></div>
-  </div><div class="figcap">Illustration — type a <b>new</b> name, then Next.</div></div>`,
-
-  createNew: `<div class="fig"><div class="winbox"><div class="wtitle">Create Database</div>
-    <div class="wbody">
-      <div class="wlabel" style="margin-bottom:4px">Source</div>
-      <div class="wradio hl" style="padding:4px 6px"><span class="dot on"></span> Create new database</div>
-      <div class="wradio" style="padding:4px 6px"><span class="dot"></span> Create a database from a backup</div>
-    </div>
-    <div class="wbtns"><span class="wbtn">&lt;- Back</span><span class="wbtn">Next -&gt;</span><span class="wbtn">Exit</span><span class="wbtn">Help</span></div>
-  </div><div class="figcap">Illustration — leave the default <b>Create new database</b> selected.</div></div>`,
-
-  preserve: `<div class="fig"><div class="winbox"><div class="wtitle">Create Database</div>
-    <div class="wbody">
-      <div class="wcheck hl" style="padding:4px 6px"><span class="box"></span> Preserve Network Definition</div>
-      <div class="wradio" style="opacity:.5"><span class="dot"></span> From the current active database</div>
-      <div class="wradio" style="opacity:.5"><span class="dot"></span> From existing export file</div>
-    </div>
-    <div class="wbtns"><span class="wbtn">&lt;- Back</span><span class="wbtn hl">Finish</span><span class="wbtn">Exit</span><span class="wbtn">Help</span></div>
-  </div><div class="figcap">Illustration — leave <b>unchecked</b> (default), then Finish.</div></div>`,
-
-  setActive: `<div class="fig"><div class="winbox"><div class="wtitle">Select New Active Database</div>
-    <div class="wbody">
-      <div class="wrow"><div class="wlabel">Database host</div><div class="wfield">\\\\PROPLUS01</div></div>
-      <div class="wrow"><div class="wlabel">Database name</div><div class="wfield hl">RESTORED_&lt;SYSTEM&gt;_2026 ▾</div></div>
-      <div class="wrow"><div class="wlabel">Database directory</div><div class="wfield">D:\\DeltaV\\DVData\\Databases</div></div>
-    </div>
-    <div class="wbtns"><span class="wbtn hl">OK</span><span class="wbtn">Cancel</span><span class="wbtn">Help</span></div>
-  </div><div class="figcap">Illustration — make sure the <b>new database</b> is selected in the drop-down.</div></div>`,
-
-  importDlg: `<div class="fig"><div class="winbox"><div class="wtitle">Import</div>
-    <div class="wbody">
-      <div class="wrow"><div class="wlabel">File name</div><div class="wfield">&lt;SYSTEM&gt;.fhx</div></div>
-      <div class="wrow"><div class="wlabel">Files of type</div><div class="wfield">Import/Export Files (*.fhx)</div></div>
-      <div class="wcheck hl" style="padding:4px 6px"><span class="box on">✓</span> Include the data for a DeltaV software upgrade</div>
-      <div class="wcheck hl" style="padding:4px 6px; margin-top:4px"><span class="box on">✓</span> Retain commissioning status of fieldbus devices on import</div>
-    </div>
-    <div class="wbtns"><span class="wbtn hl">Import</span><span class="wbtn">Cancel</span></div>
-  </div><div class="figcap">Illustration — <b>BOTH checkboxes must be checked</b> before clicking Import.</div></div>`,
-
-  noToAll: `<div class="fig"><div class="winbox"><div class="wtitle">Exploring DeltaV</div>
-    <div class="wbody"><div class="wmsg"><span class="wq">❓</span><div>
-      The database already contains an object 'PCN001'.<br>
-      Would you like to update the existing object in the database using this one from the import file?
-    </div></div></div>
-    <div class="wbtns"><span class="wbtn">Yes</span><span class="wbtn">Yes to All</span><span class="wbtn">No</span><span class="wbtn hl">No to All</span><span class="wbtn">Cancel</span></div>
-  </div><div class="figcap">Illustration — answer <b>No to All</b> (after the one "The Site" prompt, if it appears).</div></div>`,
+  adminWin:   figimg("fig2-1.png", "DeltaV Database Administration window", "KBA Figure 2-1 — Database Administration; you'll use <b>Create Database</b> and <b>Set Active Database</b>."),
+  createName: figimg("fig2-2.png", "Create Database dialog with new database name", "KBA Figure 2-2 — type a <b>new</b> name, then Next."),
+  createNew:  figimg("fig2-3.png", "Source selection with Create new database selected", "KBA Figure 2-3 — leave the default <b>Create new database</b> selected, then Next."),
+  preserve:   figimg("fig2-4.png", "Preserve Network Definition checkbox, unchecked", "KBA Figure 2-4 — leave <b>Preserve Network Definition unchecked</b> (default), then Finish."),
+  setActive:  figimg("fig2-5.png", "Select New Active Database dialog", "KBA Figure 2-5 — pick the <b>new database</b> in the drop-down, then OK."),
+  blankDb:    figimg("fig2-6.png", "DeltaV Explorer showing a blank database", "KBA Figure 2-6 — a blank database: just Library and System Configuration."),
+  deviceDefs: figimg("fig2-7.png", "Add Device Type menu under Device Definitions", "KBA Figure 2-7 — Library → Device Definitions → right-click → <b>Add Device Type…</b>"),
+  importMenu: figimg("fig2-8.png", "File, Import, Standard DeltaV Format menu", "KBA Figure 2-8 — File → Import → <b>Standard DeltaV Format…</b>"),
+  importDlg:  figimg("fig2-9.png", "Import dialog with both checkboxes selected", "KBA Figure 2-9 — <b>BOTH checkboxes checked</b>, then Import."),
+  noToAll:    figimg("fig2-10.png", "Overwrite prompt with No to All", "KBA Figure 2-10 — answer <b>No to All</b> (after the one \u201cThe Site\u201d prompt, if it appears)."),
+  vcatPair:   figimg("fig3-6.png", "Version Control Configuration, displays unchecked", "KBA Figure 3-6 — \u201cVCAT for DeltaV Displays\u201d <b>unchecked</b>…")
+            + figimg("fig3-7.png", "Version Control Configuration, displays checked", "KBA Figure 3-7 — …or <b>checked</b>, per the table below."),
 };
 
 const PHASES = [
@@ -302,7 +264,7 @@ const PHASES = [
     name: "Create a new blank database",
     steps: [
       { id: "s1", kba: "2.2 §1", title: "Close DeltaV Explorer and all database clients, then open Database Administrator",
-        detail: `No client may hold the database open. Then launch the <b>DeltaV Database Administration</b> tool.` },
+        detail: `No client may hold the database open. Then launch the <b>DeltaV Database Administration</b> tool.`, fig: "adminWin" },
       { id: "s2", kba: "2.2 §2", title: "Create Database → type a NEW database name → Next",
         detail: `Use a fresh name (not the old database's name) so the old database stays untouched on disk.`, fig: "createName" },
       { id: "s3", kba: "2.2 §3", title: "Leave \u201cCreate new database\u201d selected (default) → Next", fig: "createNew",
@@ -321,14 +283,14 @@ const PHASES = [
       { id: "s7", kba: "2.2 §8", title: "Pick the NEW database in the drop-down → OK", fig: "setActive",
         detail: `Double-check the name — this is the database every client will now open.` },
       { id: "s8", kba: "2.2 §9", title: "Close Database Administration, open DeltaV Explorer, verify a BLANK database with the new name",
-        detail: `You should see only the default Library and System Configuration containers.` },
+        detail: `You should see only the default Library and System Configuration containers.`, fig: "blankDb" },
     ],
   },
   {
     name: "Custom device definitions", cond: "dd",
     steps: [
       { id: "s9", kba: "2.2 §10", title: "Import the custom Fieldbus / HART Device Definitions BEFORE the FHX",
-        detail: `In DeltaV Explorer: <b>Library → Device Definitions</b> → right-click <b>Fieldbus Devices</b> or <b>HART Devices</b> → <b>Add Device Type…</b> and import each custom definition.`,
+        detail: `In DeltaV Explorer: <b>Library → Device Definitions</b> → right-click <b>Fieldbus Devices</b> or <b>HART Devices</b> → <b>Add Device Type…</b> and import each custom definition.`, fig: "deviceDefs",
         callout: { type: "crit", html: `<b>Order matters.</b> If the FHX is imported first, configuration referencing these devices imports as <b>Generic</b> (you'll see \u201cHART Device Revision … does not exist\u201d warnings) and the database must be re-imported from scratch.` } },
     ],
   },
@@ -336,7 +298,7 @@ const PHASES = [
     name: "Import the FHX",
     steps: [
       { id: "s10", kba: "2.2 §11a", title: "File → Import → Standard DeltaV Format…",
-        detail: `From the DeltaV Explorer menu.` },
+        detail: `From the DeltaV Explorer menu.`, fig: "importMenu" },
       { id: "s11", kba: "2.2 §11a", title: "Check BOTH import checkboxes", fig: "importDlg",
         detail: `<b>\u201cInclude the data for a DeltaV software upgrade\u201d</b> and <b>\u201cRetain commissioning status of fieldbus devices on import\u201d</b> must both be selected.` },
       { id: "s12", kba: "2.2 §11b–c", title: "Browse to the FHX backup file → Import" },
@@ -379,7 +341,7 @@ const PHASES = [
         detail2: `<b>DeltaV v13.3.1 and later:</b>`,
         cmd2: "vcatutilsmo /attach <database_name>" },
       { id: "s22", kba: "3.2 §4", title: "Enable VCAT in Database Administration — set \u201cVCAT for DeltaV Displays\u201d correctly",
-        detail: `Enable Version Control, then set <b>\u201cEnable Version Control for DeltaV Displays\u201d</b> based on how displays were and will be handled:`,
+        detail: `Enable Version Control, then set <b>\u201cEnable Version Control for DeltaV Displays\u201d</b> based on how displays were and will be handled:`, fig: "vcatPair",
         table: true },
     ],
   },
