@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FHX Restore Runbook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Public+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<style>
+  :root {
+    --bg: #F2F4F6;
+    --surface: #FFFFFF;
+    --ink: #1C2733;
+    --muted: #5C6B7A;
+    --accent: #0E7490;
+    --accent-soft: rgba(14, 116, 144, 0.10);
+    --on-accent: #FFFFFF;
+    --warn: #B45309;
+    --warn-soft: rgba(180, 83, 9, 0.10);
+    --crit: #B42318;
+    --crit-soft: rgba(180, 35, 24, 0.08);
+    --good: #1E7F3C;
+    --good-soft: rgba(30, 127, 60, 0.12);
+    --line: #D9E1E8;
+    --win: #E9EEF3;
+    --win-title: #30506B;
+    --shadow: 0 2px 10px rgba(28, 39, 51, 0.07);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #10161C;
+      --surface: #1A222B;
+      --ink: #E7EDF2;
+      --muted: #96A4B1;
+      --accent: #38BDD8;
+      --accent-soft: rgba(56, 189, 216, 0.12);
+      --on-accent: #10161C;
+      --warn: #E8A355;
+      --warn-soft: rgba(232, 163, 85, 0.12);
+      --crit: #F08A80;
+      --crit-soft: rgba(240, 138, 128, 0.10);
+      --good: #52B45F;
+      --good-soft: rgba(82, 180, 95, 0.14);
+      --line: #2A3540;
+      --win: #222C36;
+      --win-title: #3C5A76;
+      --shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #10161C;
+    --surface: #1A222B;
+    --ink: #E7EDF2;
+    --muted: #96A4B1;
+    --accent: #38BDD8;
+    --accent-soft: rgba(56, 189, 216, 0.12);
+    --on-accent: #10161C;
+    --warn: #E8A355;
+    --warn-soft: rgba(232, 163, 85, 0.12);
+    --crit: #F08A80;
+    --crit-soft: rgba(240, 138, 128, 0.10);
+    --good: #52B45F;
+    --good-soft: rgba(82, 180, 95, 0.14);
+    --line: #2A3540;
+    --win: #222C36;
+    --win-title: #3C5A76;
+    --shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    color: var(--ink);
+    background: var(--bg);
+    font-family: "Public Sans", "Avenir Next", system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+    min-height: 100vh;
+    -webkit-text-size-adjust: 100%;
+  }
+  .wrap { max-width: 740px; margin: 0 auto; padding: 16px 14px 60px; }
+
+  h1, h2, h3 { font-family: "Archivo", system-ui, sans-serif; text-wrap: balance; margin: 0; }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; }
+
+  .topbar { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 4px 2px 10px; }
+  .brand { font-family: "Archivo", system-ui, sans-serif; font-weight: 800; font-size: 20px; }
+  .brand span { color: var(--accent); }
+  .navlink {
+    background: none; border: none; padding: 4px 2px; cursor: pointer;
+    color: var(--accent); font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px;
+  }
+
+  .progresswrap { position: sticky; top: 0; z-index: 10; background: var(--bg); padding: 6px 0 10px; }
+  .progresswrap .label { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 5px; }
+  .bar { height: 9px; border-radius: 999px; background: var(--line); overflow: hidden; }
+  .bar > div { height: 100%; border-radius: 999px; background: var(--accent); transition: width 0.3s ease; }
+  @media (prefers-reduced-motion: reduce) { .bar > div { transition: none; } }
+
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); padding: 18px 16px; margin-bottom: 14px; }
+  .card h2 { font-size: 20px; }
+  .intro p { color: var(--muted); margin: 8px 0 0; font-size: 15px; }
+  .source { font-size: 13px; color: var(--muted); margin-top: 8px; }
+
+  .phase { margin: 22px 2px 10px; display: flex; align-items: baseline; gap: 10px; }
+  .phase .num { font-family: "IBM Plex Mono", monospace; font-weight: 600; color: var(--accent); font-size: 14px; }
+  .phase h2 { font-size: 18px; }
+  .phase .count { margin-left: auto; font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--muted); }
+
+  .step { display: flex; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); padding: 14px; margin-bottom: 10px; }
+  .step.next { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft), var(--shadow); }
+  .step.done { opacity: 0.62; }
+  .step.done .stitle { text-decoration: line-through; text-decoration-thickness: 2px; text-decoration-color: var(--good); }
+  .checkbox {
+    flex: 0 0 34px; height: 34px; margin-top: 2px; border-radius: 9px; cursor: pointer;
+    border: 2px solid var(--line); background: var(--surface);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 20px; color: var(--on-accent); touch-action: manipulation;
+  }
+  .step.done .checkbox { background: var(--good); border-color: var(--good); }
+  .checkbox:focus-visible, .navlink:focus-visible, .btn:focus-visible, .chipbtn:focus-visible, textarea:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .sbody { flex: 1; min-width: 0; }
+  .stitle { font-weight: 700; font-size: 16.5px; }
+  .stitle .kba { font-family: "IBM Plex Mono", monospace; font-weight: 500; font-size: 12px; color: var(--muted); margin-left: 6px; }
+  .sdetail { color: var(--muted); font-size: 14.5px; margin-top: 4px; }
+  .sdetail b { color: var(--ink); }
+  .sdetail code, .callout code { font-family: "IBM Plex Mono", monospace; font-size: 13px; background: var(--accent-soft); border-radius: 5px; padding: 1px 5px; color: var(--ink); white-space: nowrap; }
+
+  .callout { border-radius: 10px; padding: 10px 12px; margin-top: 10px; font-size: 14.5px; }
+  .callout.crit { background: var(--crit-soft); border: 1px solid var(--crit); color: var(--ink); }
+  .callout.crit b { color: var(--crit); }
+  .callout.warn { background: var(--warn-soft); border: 1px solid var(--warn); color: var(--ink); }
+  .callout.warn b { color: var(--warn); }
+  .callout.tip { background: var(--accent-soft); border: 1px solid var(--accent); color: var(--ink); }
+  .callout.tip b { color: var(--accent); }
+
+  .cmd { display: flex; align-items: center; gap: 8px; margin-top: 10px; background: var(--bg); border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px; }
+  .cmd code { flex: 1; font-family: "IBM Plex Mono", monospace; font-size: 13.5px; overflow-x: auto; white-space: nowrap; background: none; padding: 0; }
+  .chipbtn { font: inherit; font-size: 13px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border: none; border-radius: 7px; padding: 6px 10px; cursor: pointer; white-space: nowrap; }
+
+  .toggle { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .toggle .tlabel { font-size: 14.5px; font-weight: 700; }
+  .toggle button {
+    font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; min-height: 40px; padding: 6px 18px;
+    border-radius: 999px; border: 2px solid var(--line); background: var(--surface); color: var(--ink);
+  }
+  .toggle button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+
+  /* ---- stylized dialog mockups ---- */
+  .fig { margin: 12px 0 2px; }
+  .winbox { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; max-width: 430px; font-size: 13.5px; box-shadow: var(--shadow); }
+  .wtitle { background: var(--win-title); color: #fff; font-weight: 700; font-size: 13px; padding: 6px 10px; font-family: "Public Sans", sans-serif; }
+  .wbody { background: var(--win); padding: 12px; }
+  .wrow { margin-bottom: 8px; }
+  .wlabel { font-size: 12.5px; color: var(--muted); }
+  .wfield { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 5px 8px; font-family: "IBM Plex Mono", monospace; font-size: 13px; }
+  .wradio, .wcheck { display: flex; align-items: center; gap: 7px; padding: 3px 0; }
+  .dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--muted); flex: 0 0 14px; position: relative; }
+  .dot.on { border-color: var(--accent); }
+  .dot.on::after { content: ""; position: absolute; inset: 2px; border-radius: 50%; background: var(--accent); }
+  .box { width: 14px; height: 14px; border-radius: 3px; border: 2px solid var(--muted); flex: 0 0 14px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: var(--accent); }
+  .box.on { border-color: var(--accent); }
+  .wbtns { display: flex; gap: 6px; justify-content: flex-end; padding: 8px 10px; background: var(--win); border-top: 1px solid var(--line); flex-wrap: wrap; }
+  .wbtn { border: 1px solid var(--muted); border-radius: 4px; padding: 4px 14px; font-size: 12.5px; background: var(--surface); color: var(--ink); }
+  .hl { box-shadow: 0 0 0 3px var(--warn); border-radius: 4px; position: relative; }
+  .figcap { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+  .figcap b { color: var(--warn); }
+  .wmsg { display: flex; gap: 10px; align-items: flex-start; }
+  .wq { font-size: 22px; }
+
+  table.cases { border-collapse: collapse; width: 100%; margin: 10px 0 2px; font-size: 13.5px; }
+  table.cases th, table.cases td { border: 1px solid var(--line); padding: 7px 8px; text-align: left; vertical-align: top; }
+  table.cases th { background: var(--accent-soft); color: var(--accent); }
+  .tablewrap { overflow-x: auto; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; text-align: center;
+    font: inherit; font-weight: 700; cursor: pointer;
+    border-radius: 11px; padding: 12px 18px; min-height: 48px;
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+    touch-action: manipulation;
+  }
+  .btn-danger { color: var(--crit); }
+  .btn-row { display: flex; gap: 10px; margin-top: 14px; }
+  .btn-row .btn { flex: 1; }
+
+  textarea.notes {
+    width: 100%; min-height: 110px; font: inherit; font-size: 15px; color: var(--ink);
+    background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; resize: vertical;
+  }
+
+  details.wref { border-bottom: 1px solid var(--line); padding: 4px 0; }
+  details.wref:last-of-type { border-bottom: none; }
+  details.wref summary { cursor: pointer; font-weight: 700; padding: 9px 2px; font-size: 15.5px; list-style: none; display: flex; gap: 8px; align-items: baseline; }
+  details.wref summary::-webkit-details-marker { display: none; }
+  details.wref summary::before { content: "▸"; color: var(--accent); }
+  details.wref[open] summary::before { content: "▾"; }
+  .wex { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin: 6px 0; overflow-x: auto; white-space: pre-wrap; }
+  .wref p { font-size: 14.5px; color: var(--muted); margin: 6px 0; }
+  .wref p b { color: var(--ink); }
+
+  .donecard { text-align: center; padding: 24px 16px; }
+  .donecard .big { font-size: 42px; }
+  .footnote { color: var(--muted); font-size: 13px; text-align: center; margin-top: 16px; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">FHX <span>Restore</span> Runbook</div>
+    <button class="navlink" id="navBtn"></button>
+  </div>
+  <div class="progresswrap" id="progresswrap"></div>
+  <div id="app"></div>
+</div>
+
+<script>
+"use strict";
+
+/* ================= checklist content (from Emerson KBA NK-1300-0236) ================= */
+const LOGPATH = "D:\\DeltaV\\DVData\\importexportprogress.log";
+const VCATPATH = "D:\\DeltaV\\DVData\\VCAT_Databases";
+
+/* --- stylized dialog figures --- */
+const FIGS = {
+  createName: `<div class="fig"><div class="winbox"><div class="wtitle">Create Database</div>
+    <div class="wbody">
+      <div class="wrow"><div class="wlabel">Database Location — Host / Directory</div>
+      <div class="wfield">D:\\DeltaV\\DVData\\Databases</div></div>
+      <div class="wrow"><div class="wlabel">New Database Name</div>
+      <div class="wfield hl">RESTORED_&lt;SYSTEM&gt;_2026</div></div>
+    </div>
+    <div class="wbtns"><span class="wbtn">&lt;- Back</span><span class="wbtn hl">Next -&gt;</span><span class="wbtn">Exit</span><span class="wbtn">Help</span></div>
+  </div><div class="figcap">Illustration — type a <b>new</b> name, then Next.</div></div>`,
+
+  createNew: `<div class="fig"><div class="winbox"><div class="wtitle">Create Database</div>
+    <div class="wbody">
+      <div class="wlabel" style="margin-bottom:4px">Source</div>
+      <div class="wradio hl" style="padding:4px 6px"><span class="dot on"></span> Create new database</div>
+      <div class="wradio" style="padding:4px 6px"><span class="dot"></span> Create a database from a backup</div>
+    </div>
+    <div class="wbtns"><span class="wbtn">&lt;- Back</span><span class="wbtn">Next -&gt;</span><span class="wbtn">Exit</span><span class="wbtn">Help</span></div>
+  </div><div class="figcap">Illustration — leave the default <b>Create new database</b> selected.</div></div>`,
+
+  preserve: `<div class="fig"><div class="winbox"><div class="wtitle">Create Database</div>
+    <div class="wbody">
+      <div class="wcheck hl" style="padding:4px 6px"><span class="box"></span> Preserve Network Definition</div>
+      <div class="wradio" style="opacity:.5"><span class="dot"></span> From the current active database</div>
+      <div class="wradio" style="opacity:.5"><span class="dot"></span> From existing export file</div>
+    </div>
+    <div class="wbtns"><span class="wbtn">&lt;- Back</span><span class="wbtn hl">Finish</span><span class="wbtn">Exit</span><span class="wbtn">Help</span></div>
+  </div><div class="figcap">Illustration — leave <b>unchecked</b> (default), then Finish.</div></div>`,
+
+  setActive: `<div class="fig"><div class="winbox"><div class="wtitle">Select New Active Database</div>
+    <div class="wbody">
+      <div class="wrow"><div class="wlabel">Database host</div><div class="wfield">\\\\PROPLUS01</div></div>
+      <div class="wrow"><div class="wlabel">Database name</div><div class="wfield hl">RESTORED_&lt;SYSTEM&gt;_2026 ▾</div></div>
+      <div class="wrow"><div class="wlabel">Database directory</div><div class="wfield">D:\\DeltaV\\DVData\\Databases</div></div>
+    </div>
+    <div class="wbtns"><span class="wbtn hl">OK</span><span class="wbtn">Cancel</span><span class="wbtn">Help</span></div>
+  </div><div class="figcap">Illustration — make sure the <b>new database</b> is selected in the drop-down.</div></div>`,
+
+  importDlg: `<div class="fig"><div class="winbox"><div class="wtitle">Import</div>
+    <div class="wbody">
+      <div class="wrow"><div class="wlabel">File name</div><div class="wfield">&lt;SYSTEM&gt;.fhx</div></div>
+      <div class="wrow"><div class="wlabel">Files of type</div><div class="wfield">Import/Export Files (*.fhx)</div></div>
+      <div class="wcheck hl" style="padding:4px 6px"><span class="box on">✓</span> Include the data for a DeltaV software upgrade</div>
+      <div class="wcheck hl" style="padding:4px 6px; margin-top:4px"><span class="box on">✓</span> Retain commissioning status of fieldbus devices on import</div>
+    </div>
+    <div class="wbtns"><span class="wbtn hl">Import</span><span class="wbtn">Cancel</span></div>
+  </div><div class="figcap">Illustration — <b>BOTH checkboxes must be checked</b> before clicking Import.</div></div>`,
+
+  noToAll: `<div class="fig"><div class="winbox"><div class="wtitle">Exploring DeltaV</div>
+    <div class="wbody"><div class="wmsg"><span class="wq">❓</span><div>
+      The database already contains an object 'PCN001'.<br>
+      Would you like to update the existing object in the database using this one from the import file?
+    </div></div></div>
+    <div class="wbtns"><span class="wbtn">Yes</span><span class="wbtn">Yes to All</span><span class="wbtn">No</span><span class="wbtn hl">No to All</span><span class="wbtn">Cancel</span></div>
+  </div><div class="figcap">Illustration — answer <b>No to All</b> (after the one "The Site" prompt, if it appears).</div></div>`,
+};
+
+const PHASES = [
+  {
+    name: "Before you begin",
+    steps: [
+      { id: "p1", title: "Locate the FHX backup and sanity-check it",
+        detail: `Find the most recent <b>.fhx</b> export (from the Daily Export or a manual export). Check the file date and size — an FHX is typically under 1&nbsp;GB. If your backup strategy scripts it, the Daily Export runs:`,
+        cmd: "dbimpexpclient -de <backup path>" },
+      { id: "p2", title: "Answer: does this database use CUSTOM device definitions?",
+        detail: `Custom <b>Foundation Fieldbus</b> or <b>HART</b> device definitions that are not in the standard DeltaV device library must be imported <b>before</b> the FHX, or those devices come in as Generic. If yes, have the DD files ready — and note that depending on DeltaV version, <b>AMS may need to be installed on the ProPlus</b> to import them.`,
+        toggle: "dd", toggleLabel: "Custom device definitions?" },
+      { id: "p3", title: "Answer: does this system use VCAT (Version Control)?",
+        detail: `An FHX export does <b>not</b> include the VCAT database. If VCAT is in use you need a separate VCAT backup (a copied folder from <code>${esc(VCATPATH)}</code>) to restore after the main database — this runbook will add those steps.`,
+        toggle: "vcat", toggleLabel: "VCAT in use?" },
+      { id: "p4", title: "Plan for the download window",
+        detail: `The recovery ends with a <b>download of the Professional Plus</b>. Schedule accordingly.` },
+    ],
+  },
+  {
+    name: "Create a new blank database",
+    steps: [
+      { id: "s1", kba: "2.2 §1", title: "Close DeltaV Explorer and all database clients, then open Database Administrator",
+        detail: `No client may hold the database open. Then launch the <b>DeltaV Database Administration</b> tool.` },
+      { id: "s2", kba: "2.2 §2", title: "Create Database → type a NEW database name → Next",
+        detail: `Use a fresh name (not the old database's name) so the old database stays untouched on disk.`, fig: "createName" },
+      { id: "s3", kba: "2.2 §3", title: "Leave \u201cCreate new database\u201d selected (default) → Next", fig: "createNew",
+        detail: `You are restoring from an FHX <b>import</b>, so the database starts blank. (\u201cCreate a database from a backup\u201d is only for the Database Admin Backup set.)` },
+      { id: "s4", kba: "2.2 §4", title: "Leave \u201cPreserve network definition\u201d UNCHECKED (default)", fig: "preserve",
+        detail: `The network definition will come in with the FHX import.` },
+      { id: "s5", kba: "2.2 §5–6", title: "Finish → Yes → OK",
+        detail: `Click <b>Finish</b>, answer <b>Yes</b> on the confirmation, then <b>OK</b> when it reports the database has been created.` },
+    ],
+  },
+  {
+    name: "Set it active",
+    steps: [
+      { id: "s6", kba: "2.2 §7", title: "Set Active Database → Change → OK on the Warning",
+        detail: `Back in Database Administration, open <b>Set Active Database</b>, click <b>Change</b>, and acknowledge the warning dialog.` },
+      { id: "s7", kba: "2.2 §8", title: "Pick the NEW database in the drop-down → OK", fig: "setActive",
+        detail: `Double-check the name — this is the database every client will now open.` },
+      { id: "s8", kba: "2.2 §9", title: "Close Database Administration, open DeltaV Explorer, verify a BLANK database with the new name",
+        detail: `You should see only the default Library and System Configuration containers.` },
+    ],
+  },
+  {
+    name: "Custom device definitions", cond: "dd",
+    steps: [
+      { id: "s9", kba: "2.2 §10", title: "Import the custom Fieldbus / HART Device Definitions BEFORE the FHX",
+        detail: `In DeltaV Explorer: <b>Library → Device Definitions</b> → right-click <b>Fieldbus Devices</b> or <b>HART Devices</b> → <b>Add Device Type…</b> and import each custom definition.`,
+        callout: { type: "crit", html: `<b>Order matters.</b> If the FHX is imported first, configuration referencing these devices imports as <b>Generic</b> (you'll see \u201cHART Device Revision … does not exist\u201d warnings) and the database must be re-imported from scratch.` } },
+    ],
+  },
+  {
+    name: "Import the FHX",
+    steps: [
+      { id: "s10", kba: "2.2 §11a", title: "File → Import → Standard DeltaV Format…",
+        detail: `From the DeltaV Explorer menu.` },
+      { id: "s11", kba: "2.2 §11a", title: "Check BOTH import checkboxes", fig: "importDlg",
+        detail: `<b>\u201cInclude the data for a DeltaV software upgrade\u201d</b> and <b>\u201cRetain commissioning status of fieldbus devices on import\u201d</b> must both be selected.` },
+      { id: "s12", kba: "2.2 §11b–c", title: "Browse to the FHX backup file → Import" },
+      { id: "s13", kba: "2.2 §12", title: "Answer the overwrite prompts: \u201cThe Site\u201d → Yes, everything else → No to All", fig: "noToAll",
+        detail: `The first prompt may ask to overwrite <b>\u201cThe Site\u201d</b> — if it does, answer <b>Yes</b> to that one only. On the next prompt choose <b>No to All</b>.`,
+        callout: { type: "warn", html: `<b>Easy to fumble:</b> \u201cYes to All\u201d here is the classic mistake. Only \u201cThe Site\u201d gets a Yes.` } },
+      { id: "s14", title: "Wait for the import to complete",
+        detail: `Large databases can take a while. Don't open other database clients during the import.` },
+    ],
+  },
+  {
+    name: "Verify the import — the gate",
+    steps: [
+      { id: "s15", kba: "2.2 §13", title: "Open the import log and read it",
+        detail: `Review every Error and Warning:`, cmd: LOGPATH },
+      { id: "s16", kba: "2.2 §13", title: "Save a COPY of the log somewhere else",
+        detail: `The log is <b>overwritten by the next import or export</b>. Copy it next to the FHX backup for the record.` },
+      { id: "s17", title: "Decision gate: are there any ERRORS in the log?",
+        detail: `<b>Errors</b> mean items failed to import — the database is <b>incomplete and not suitable for download</b>. Fix the cause (missing device definitions is the usual one) and re-run this runbook from the top. <b>Warnings</b> alone are typically harmless — review them against the Warnings guide (top-right) before moving on.`,
+        callout: { type: "crit", html: `<b>STOP if errors exist.</b> Do not download with import Errors in the log.` } },
+    ],
+  },
+  {
+    name: "Download",
+    steps: [
+      { id: "s18", kba: "2.2 §14", title: "Download the Professional Plus",
+        detail: `With <b>zero import Errors</b>, perform the ProPlus download to complete the recovery.` },
+    ],
+  },
+  {
+    name: "Restore VCAT", cond: "vcat",
+    steps: [
+      { id: "s19", kba: "3.2 §1", title: "Confirm the database ↔ VCAT folder names match",
+        detail: `The VCAT folder name must be the restored database name prefixed with <code>VCAT_</code>. Example: database <code>TEST_SYSTEM_DB</code> ↔ folder <code>VCAT_TEST_SYSTEM_DB</code>. If your new database name differs from the original, the VCAT folder won't match — consider restoring with the original name instead.` },
+      { id: "s20", kba: "3.2 §2", title: "Copy the VCAT backup folder into the VCAT_Databases directory",
+        cmd: VCATPATH },
+      { id: "s21", kba: "3.2 §3", title: "Attach the VCAT database to SQL (version-specific command)",
+        detail: `Run at a command prompt. <b>DeltaV v13.3 and earlier:</b>`,
+        cmd: "vcatutil /attach <database_name>",
+        detail2: `<b>DeltaV v13.3.1 and later:</b>`,
+        cmd2: "vcatutilsmo /attach <database_name>" },
+      { id: "s22", kba: "3.2 §4", title: "Enable VCAT in Database Administration — set \u201cVCAT for DeltaV Displays\u201d correctly",
+        detail: `Enable Version Control, then set <b>\u201cEnable Version Control for DeltaV Displays\u201d</b> based on how displays were and will be handled:`,
+        table: true },
+    ],
+  },
+];
+
+function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
+
+/* ================= state (local + synced via /api/state) ================= */
+const KEY = "fhx-restore-state";
+const API = "/api/state";
+let apiSynced = false;
+let postTimer = null;
+
+function blankState() { return { v: 1, items: {}, flags: {}, notes: { text: "", ts: 0 } }; }
+function loadLocal() {
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY));
+    return s && s.items ? s : blankState();
+  } catch { return blankState(); }
+}
+let S = loadLocal();
+function saveLocal() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} }
+
+function mergeStates(a, b) {
+  const out = blankState();
+  const ids = new Set([...Object.keys(a.items || {}), ...Object.keys(b.items || {})]);
+  for (const id of ids) {
+    const x = (a.items || {})[id], y = (b.items || {})[id];
+    out.items[id] = !x ? y : !y ? x : (y.ts > x.ts ? y : x);
+  }
+  const fl = new Set([...Object.keys(a.flags || {}), ...Object.keys(b.flags || {})]);
+  for (const f of fl) {
+    const x = (a.flags || {})[f], y = (b.flags || {})[f];
+    out.flags[f] = !x ? y : !y ? x : (y.ts > x.ts ? y : x);
+  }
+  const an = a.notes || { text: "", ts: 0 }, bn = b.notes || { text: "", ts: 0 };
+  out.notes = bn.ts > an.ts ? bn : an;
+  return out;
+}
+
+function schedulePost() {
+  clearTimeout(postTimer);
+  postTimer = setTimeout(() => {
+    fetch(API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(S) }).catch(() => {});
+  }, 700);
+}
+
+async function syncState() {
+  try {
+    const res = await fetch(API);
+    if (!res.ok) throw new Error();
+    const server = await res.json();
+    if (!server || typeof server !== "object") throw new Error();
+    S = mergeStates(server.items ? server : blankState(), S);
+    saveLocal();
+    apiSynced = true;
+    schedulePost();
+    render();
+  } catch { apiSynced = false; }
+}
+
+function setDone(id, done) {
+  S.items[id] = { done, ts: Date.now() };
+  saveLocal(); schedulePost(); render();
+}
+function setFlag(name, val) {
+  S.flags[name] = { v: val, ts: Date.now() };
+  saveLocal(); schedulePost(); render();
+}
+function flag(name) { return S.flags[name] ? S.flags[name].v : null; }
+function isDone(id) { return !!(S.items[id] && S.items[id].done); }
+
+function resetAll() {
+  if (!confirm("Start a fresh restore? This clears every checkmark and the notes (everywhere, since progress syncs).")) return;
+  S = blankState();
+  saveLocal();
+  fetch(API, { method: "DELETE" }).catch(() => {});
+  render();
+}
+
+/* ================= rendering ================= */
+const app = document.getElementById("app");
+const navBtn = document.getElementById("navBtn");
+const progresswrap = document.getElementById("progresswrap");
+let screen = "runbook";
+
+navBtn.addEventListener("click", () => {
+  screen = screen === "runbook" ? "warnings" : "runbook";
+  render();
+  window.scrollTo(0, 0);
+});
+
+function visiblePhases() {
+  return PHASES.filter(ph => !ph.cond || flag(ph.cond) === "yes");
+}
+function visibleSteps() {
+  return visiblePhases().flatMap(ph => ph.steps);
+}
+
+function render() {
+  navBtn.textContent = screen === "runbook" ? "Warnings guide" : "Back to runbook";
+  renderProgress();
+  if (screen === "runbook") renderRunbook();
+  else renderWarnings();
+}
+
+function renderProgress() {
+  const steps = visibleSteps();
+  const done = steps.filter(s => isDone(s.id)).length;
+  const next = steps.find(s => !isDone(s.id));
+  progresswrap.innerHTML = `
+    <div class="label">
+      <span>${done} of ${steps.length} steps done</span>
+      <span>${done === steps.length ? "Complete ✓" : next ? "Next: " + next.title.slice(0, 44) + (next.title.length > 44 ? "…" : "") : ""}</span>
+    </div>
+    <div class="bar"><div style="width:${steps.length ? (done / steps.length) * 100 : 0}%"></div></div>`;
+}
+
+function stepHTML(st, isNext) {
+  const done = isDone(st.id);
+  const t = st.toggle;
+  const tv = t ? flag(t) : null;
+  return `<div class="step ${done ? "done" : ""} ${isNext ? "next" : ""}" id="step-${st.id}">
+    <button class="checkbox" data-id="${st.id}" aria-pressed="${done}" aria-label="Mark step done">${done ? "✓" : ""}</button>
+    <div class="sbody">
+      <div class="stitle">${st.title}${st.kba ? `<span class="kba">KBA ${st.kba}</span>` : ""}</div>
+      ${st.detail ? `<div class="sdetail">${st.detail}</div>` : ""}
+      ${st.cmd ? `<div class="cmd"><code>${esc(st.cmd)}</code><button class="chipbtn" data-copy="${esc(st.cmd)}">Copy</button></div>` : ""}
+      ${st.detail2 ? `<div class="sdetail" style="margin-top:8px">${st.detail2}</div>` : ""}
+      ${st.cmd2 ? `<div class="cmd"><code>${esc(st.cmd2)}</code><button class="chipbtn" data-copy="${esc(st.cmd2)}">Copy</button></div>` : ""}
+      ${t ? `<div class="toggle"><span class="tlabel">${st.toggleLabel}</span>
+        <button data-flag="${t}" data-val="yes" aria-pressed="${tv === "yes"}">Yes</button>
+        <button data-flag="${t}" data-val="no" aria-pressed="${tv === "no"}">No</button></div>` : ""}
+      ${st.fig ? FIGS[st.fig] : ""}
+      ${st.callout ? `<div class="callout ${st.callout.type}">${st.callout.html}</div>` : ""}
+      ${st.table ? casesTable() : ""}
+    </div>
+  </div>`;
+}
+
+function casesTable() {
+  return `<div class="tablewrap"><table class="cases">
+    <tr><th>Displays VCAT before restore</th><th>Displays VCAT after restore</th><th>Set the checkbox to…</th></tr>
+    <tr><td>No</td><td>No</td><td><b>Unchecked</b></td></tr>
+    <tr><td>Yes</td><td>No</td><td><b>Unchecked</b> — then follow KBA AP-0800-0078 (database does not shrink after disabling VCAT for displays)</td></tr>
+    <tr><td>No</td><td>Yes</td><td rowspan="2"><b>Checked</b></td></tr>
+    <tr><td>Yes</td><td>Yes</td></tr>
+  </table></div>`;
+}
+
+function renderRunbook() {
+  const phases = visiblePhases();
+  const steps = visibleSteps();
+  const next = steps.find(s => !isDone(s.id));
+  const allDone = steps.length && steps.every(s => isDone(s.id));
+  let n = 0;
+  let html = `
+    <div class="card intro">
+      <h2>Restore a DeltaV database from an FHX export</h2>
+      <p>Interactive walkthrough of Emerson KBA <b>NK-1300-0236</b> (FHX path). Check steps off as you go — progress saves automatically and syncs to any device that opens this page. Answer the two questions in "Before you begin" to tailor the list.</p>
+      <p class="source">Source: "Restoring the DeltaV Configuration Database from a Backup," applicable DeltaV v9.3.x–v14.x. Always cross-check against the current KBA for your version.</p>
+      <details style="margin-top:10px"><summary style="cursor:pointer;font-weight:700;color:var(--accent)">Restoring from a Database Admin Backup instead? (summary)</summary>
+        <div class="sdetail" style="margin-top:6px">Create a new blank database but <b>do NOT set it active</b> → in the Create Database wizard choose <b>"Create a database from a backup"</b> → browse to the backup set → Create → Yes. Then Set Active Database and perform a <b>Total Download</b> of the ProPlus. (KBA §2.3 — used when the Admin backup is newer than the FHX or no FHX exists. It includes VCAT.)</div>
+      </details>
+    </div>`;
+  for (const ph of phases) {
+    n++;
+    const phDone = ph.steps.filter(s => isDone(s.id)).length;
+    html += `<div class="phase"><span class="num">${String(n).padStart(2, "0")}</span><h2>${ph.name}</h2><span class="count">${phDone}/${ph.steps.length}</span></div>`;
+    html += ph.steps.map(st => stepHTML(st, next && st.id === next.id)).join("");
+  }
+  html += `
+    ${allDone ? `<div class="card donecard"><div class="big">✅</div><h2>Restore complete</h2>
+      <p style="color:var(--muted);margin:8px 0 0">Database imported, verified, and downloaded. Archive the import log and the FHX with today's date.</p></div>` : ""}
+    <div class="card">
+      <h2 style="font-size:17px">Notes for this restore</h2>
+      <p style="color:var(--muted);font-size:14px;margin:4px 0 8px">Log excerpts, DB name, times — synced with your progress.</p>
+      <textarea class="notes" id="notesBox" placeholder="e.g. Restored as RESTORED_PLANT_2026, log clean, downloaded 14:30…">${esc(S.notes.text || "")}</textarea>
+    </div>
+    <div class="btn-row"><button class="btn btn-danger" id="resetBtn">Start a fresh restore (clear all)</button></div>
+    <p class="footnote">${apiSynced ? "Progress syncs — open this same link on any device to continue." : "Progress is saved on this device."}</p>`;
+  app.innerHTML = html;
+
+  app.querySelectorAll(".checkbox").forEach(b =>
+    b.addEventListener("click", () => setDone(b.dataset.id, !isDone(b.dataset.id))));
+  app.querySelectorAll("[data-flag]").forEach(b =>
+    b.addEventListener("click", () => setFlag(b.dataset.flag, b.dataset.val)));
+  app.querySelectorAll("[data-copy]").forEach(b =>
+    b.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(b.dataset.copy); b.textContent = "Copied ✓"; setTimeout(() => b.textContent = "Copy", 1500); } catch {}
+    }));
+  const notes = document.getElementById("notesBox");
+  notes.addEventListener("input", () => {
+    S.notes = { text: notes.value.slice(0, 5000), ts: Date.now() };
+    saveLocal(); schedulePost();
+  });
+  document.getElementById("resetBtn").addEventListener("click", resetAll);
+}
+
+function renderWarnings() {
+  app.innerHTML = `
+    <div class="card">
+      <h2>Typical import WARNINGS (and what they mean)</h2>
+      <p style="color:var(--muted);font-size:14.5px;margin:8px 0 2px">A clean restore has <b style="color:var(--ink)">zero Errors</b>. Warnings are usually harmless — most reflect schema changes or issues that already existed before the restore — but read each one before downloading. (KBA §4)</p>
+    </div>
+    <div class="card">
+      <details class="wref" open>
+        <summary>"HART Device Revision … does not exist"</summary>
+        <div class="wex">WARNING: The HART Device Revision 'Rosemount Inc./3051ERS/1' does not exist. The HART Device Revision 'Conventional./Generic/1' has been used instead.</div>
+        <p><b>Meaning:</b> the device descriptor wasn't imported before the FHX, so the device came in as a Generic type.</p>
+        <p><b>Action:</b> <b style="color:var(--crit)">this one is NOT harmless if you need those device types</b> — import the custom device definitions and re-import the database per the runbook.</p>
+      </details>
+      <details class="wref">
+        <summary>Parse errors on expressions</summary>
+        <div class="wex">WARNING: Expression "" on path "FB_TEST_COMP/T1" has 1 parse error(s).
+WARNING: Parse errors are Row 0, Column 0: A blank expression was supplied.</div>
+        <p><b>Meaning:</b> an expression in a module is blank, commented out, or invalid. <b>Pre-existing</b> — not caused by the import.</p>
+        <p><b>Action:</b> note the modules; correct later if necessary.</p>
+      </details>
+      <details class="wref">
+        <summary>Unassigned Fieldbus function block</summary>
+        <div class="wex">WARNING: Function block 'LOOP_TEST/AI1' is not bound to a Fieldbus function block</div>
+        <p><b>Meaning:</b> the block isn't assigned to a valid Fieldbus function block, or the module's scan rate differs from its template (in which case it's a nuisance alert).</p>
+        <p><b>Action:</b> verify binding/scan rate when convenient.</p>
+      </details>
+      <details class="wref">
+        <summary>Unresolved references</summary>
+        <div class="wex">WARNING: There are unresolved references to 'PROCESS_101AT' or its components.</div>
+        <p><b>Meaning:</b> a module references a parameter path that doesn't resolve. <b>Pre-existing</b>; doesn't block import or export.</p>
+        <p><b>Action:</b> clean up later — unresolved references hurt runtime performance and shouldn't exist in normal operation.</p>
+      </details>
+    </div>
+    <div class="card">
+      <h2 style="font-size:17px">Errors vs. Warnings — the rule</h2>
+      <div class="callout crit" style="margin-top:8px"><b>Any ERROR</b> = items failed to import = the database is incomplete. <b>Do not download.</b> Fix and re-import.</div>
+      <div class="callout tip" style="margin-top:8px"><b>Warnings only</b> = generally safe to proceed, after you've read and understood each one.</div>
+    </div>`;
+}
+
+render();
+syncState();
+</script>
+</body>
+</html>
